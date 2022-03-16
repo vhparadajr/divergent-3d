@@ -1,13 +1,15 @@
 import React from 'react';
-import { Form, Button, Select, Input } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { Form, Button, Select, Input, Space, TreeSelect, Typography } from 'antd';
 import './App.css';
 import axios from 'axios';
-import { v4 as uuidv4 } from 'uuid';
+import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 
 const { Option } = Select;
+const { Paragraph } = Typography
+const { TreeNode } = TreeSelect;
 
 const App = () => {
+
   const onFinish = (values) => {
     console.log(values)
     axios.post('https://divergent3d.getsandbox.com:443/warehouse', values)
@@ -22,19 +24,33 @@ const App = () => {
   const onFinishFailed = (errorInfo) => {
     console.log('Failed:', errorInfo);
   };
-
-  const generateShelves = () => {
-    let shelves = []
-    for(let i=0; i<10; i++){
-      shelves[i] = uuidv4();
-    } 
-    return shelves
-  }
-
-  let warehouseArray = new Array(12)
+  
+  let shelvesArray = new Array(12)
   for(let i=0; i<12; i++){
-    warehouseArray[i] = {zone:i+1, key:i, shelves: generateShelves()};
+    shelvesArray[i] = {
+      label:`Shelf ${i+1}`, 
+      value:`0-${i}`,
+      key:`0-${i}`,
+      children: [...Array(10)].map((_,index) => (
+        {
+          label: `Shelf ${i+1}-${index}`,
+          value: `${i+1}-${index+1}`,
+          key: `${i+1}-${index+1}`,
+        }
+      )),
+    };
   } 
+
+  let zonesArray = [...Array(12)].map((_,index) => (
+    {
+      zone: index+1,
+      key: index+1
+    }
+  ))
+
+  const isSelected = (formValues, shelf) => (
+    !!formValues.find((zone) => zone?.shelves?.includes(shelf.key))
+  )
 
   return (
     <div className='form-wrapper'>
@@ -59,81 +75,114 @@ const App = () => {
         >
           <Input/>
         </Form.Item>
-        <Form.Item
-          label='Inventory'
-          name='inventory'
-          rules={[
-            {
-              required: true,
-              message: 'Please select a inventory item!',
-            },
-          ]}
+        <Paragraph italic>
+          A warehouse has 12 zones with a maximum of 10 shelves per zone. Zones without shelves will be marked as empty.
+        </Paragraph>
+        <Form.List
+          name="zones"
         >
-          <Select 
-            placeholder="Choose inventory to assign a location"
-            allowClear
-          >
-            <Option value='fork_arm'>Fork Arm</Option>
-            <Option value='actuator_valve'>Actuator Valve</Option>
-            <Option value='solenoid'>Solenoid</Option>
-            <Option value='conversion_kit'>Converstion Kit</Option>
-          </Select>
-        </Form.Item>
-        <Form.Item
-          label='Zone'
-          name='zone'
-          rules={[
-            {
-              required: true,
-              message: 'Please select zone!',
-            },
-          ]}
-        >
-          <Select>
-            {warehouseArray.map((zone) => (
-              <Option
-              key={zone.key}
-              value={zone.zone}
-              >
-                {zone.zone}
-              </Option>
-            ))}
-          </Select>
-        </Form.Item>
+          {(fields, { add, remove }, { errors }) => (
+            <>
+              {fields.map((key, name, ...restField) => (
+                <Space key={key} direction='vertical' style={{ width:'100%'}}>
+                    <Form.Item shouldUpdate>
+                      {(formInstance) => (
+                        <div className='zone-remove-wrapper'>
+                          <Form.Item
+                            {...restField}
+                            label='Zone'
+                            name={[name, 'zone']}
+                            rules={[{ required: true, message: 'Missing Zone' }]}
+                            className='zone-styling'
+                          >
+                            <Select>
+                              {zonesArray.map((zone) => {
+                                const selected = !!formInstance.getFieldValue('zones')
+                                  .find((selectedZone) => selectedZone?.zone === zone.zone)
+                                
+                                return (
+                                  <Option 
+                                    value={zone.zone} 
+                                    key={zone.key}
+                                    disabled={selected}
+                                  >
+                                    {zone.zone}
+                                  </Option>
+                                )}
+                              )}
+                            </Select> 
+                          </Form.Item>
+                          <MinusCircleOutlined onClick={() => remove(name)} />
+                        </div>
+                      )}
+                    </Form.Item>
+                  <Form.Item shouldUpdate>
+                    {(formInstance) => (
+                      <Form.Item
+                        {...restField}
+                        label='Shelves'
+                        name={[name, 'shelves']}
+                        rules={[
+                          { 
+                            required: true, 
+                            message: 'Missing shelves',
+                          }, 
+                          {
+                            validator: async (_, value) => {
+                              if (value?.length > 10) {
+                                return Promise.reject(new Error('Cant add more than 10 shelves per zone'));
+                              }
+                            },
+                          }
+                        ]}
+                      >
+                        <TreeSelect
+                          showSearch={false}
+                          style={{ width: '100%', paddingRight:'31px' }}
+                          dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
+                          placeholder="Please select the shelves associated with this zone"
+                          allowClear
+                          multiple
+                        >
+                          {shelvesArray.map((parentShelf) => {
+                            const formValues = formInstance.getFieldValue('zones')
 
-        <Form.Item
-          label='Shelf'
-          name='shelf'
-          rules={[
-            {
-              required: true,
-              message: 'Please select shelf',
-            },
-          ]}
-        >
-          <Select>
-            {warehouseArray[0].shelves.map((shelf) => (
-              <Option
-              key={shelf}
-              value={shelf.shelf}
-            >
-              {shelf.shelf}
-            </Option>
-            ))}
-          </Select>
-        </Form.Item>
-        {/* TODO placeholder for add form.list */}
+                            return (
+                              <TreeNode value={parentShelf.value} title={parentShelf.label} disabled={isSelected(formValues, parentShelf)}>
+                                {parentShelf.children.map((childShelf) => (
+                                    <TreeNode value={childShelf.value} title={childShelf.label} disabled={isSelected(formValues, childShelf)}/>
+                                  )
+                                )}
+                              </TreeNode>
+                            )
+                          })}
+                        </TreeSelect>
+                      </Form.Item>
+                    )}
+                  </Form.Item>
+                </Space>
+              ))}
+              <Form.Item style={{paddingTop: '30px'}}>
+                {/* TODO disable button if all 12 zones have been selected */}
+                <Button
+                  type="dashed"
+                  onClick={() => add()}
+                  style={{ width: '100%' }}
+                  icon={<PlusOutlined />}
+                >
+                  Add Zone
+                </Button>
+                <Form.ErrorList errors={errors} />
+              </Form.Item>
+            </>
+          )}
+        </Form.List>
         <Form.Item>
-          <Button
-            type="dashed"
+          <Button 
+            type='primary' 
+            htmlType='submit' 
             style={{ width: '100%' }}
-            icon={<PlusOutlined />}
           >
-            Add Inventory
-          </Button>
-        </Form.Item>
-        <Form.Item>
-          <Button type='primary' htmlType='submit' style={{ width: '100%' }}>
             Submit
           </Button>
         </Form.Item>
@@ -143,3 +192,7 @@ const App = () => {
 };
 
 export default App;
+
+
+
+

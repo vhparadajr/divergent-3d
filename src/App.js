@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React from 'react';
 import { Form, Button, Select, Input, Space, TreeSelect, Typography } from 'antd';
 import './App.css';
 import axios from 'axios';
@@ -6,14 +6,9 @@ import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 
 const { Option } = Select;
 const { Paragraph } = Typography
+const { TreeNode } = TreeSelect;
 
 const App = () => {
-  const [treeSelectValue, setTreeSelectValue] = useState(undefined)
-  console.log('treeSelectValues', treeSelectValue)
-
-  const handleChange = (values) => {
-    return console.log(values)
-  }
 
   const onFinish = (values) => {
     console.log(values)
@@ -40,7 +35,7 @@ const App = () => {
         {
           label: `Shelf ${i+1}-${index}`,
           value: `${i+1}-${index+1}`,
-          key: `${i+1}-${index+1}`
+          key: `${i+1}-${index+1}`,
         }
       )),
     };
@@ -53,8 +48,9 @@ const App = () => {
     }
   ))
 
-  console.log('zones', zonesArray)
-  console.log('shelves', shelvesArray)
+  const isSelected = (formValues, shelf) => (
+    !!formValues.find((zone) => zone?.shelves?.includes(shelf.key))
+  )
 
   return (
     <div className='form-wrapper'>
@@ -80,7 +76,7 @@ const App = () => {
           <Input/>
         </Form.Item>
         <Paragraph italic>
-          A warehouse can as 12 zones with a maximum of 10 shelves per zone
+          A warehouse has 12 zones with a maximum of 10 shelves per zone. Zones without shelves will be marked as empty.
         </Paragraph>
         <Form.List
           name="zones"
@@ -101,14 +97,14 @@ const App = () => {
                           >
                             <Select>
                               {zonesArray.map((zone) => {
-                                const hasBeenSelected = !!formInstance.getFieldValue('zones')
+                                const selected = !!formInstance.getFieldValue('zones')
                                   .find((selectedZone) => selectedZone?.zone === zone.zone)
                                 
                                 return (
                                   <Option 
                                     value={zone.zone} 
                                     key={zone.key}
-                                    disabled={hasBeenSelected}
+                                    disabled={selected}
                                   >
                                     {zone.zone}
                                   </Option>
@@ -120,23 +116,49 @@ const App = () => {
                         </div>
                       )}
                     </Form.Item>
-                  <Form.Item
-                    {...restField}
-                    label='Shelves'
-                    name={[name, 'shelves']}
-                    rules={[{ required: true, message: 'Missing shelves'}]}
-                  >
-                    <TreeSelect
-                      treeData={shelvesArray}
-                      showSearch={false}
-                      style={{ width: '100%', paddingRight:'31px' }}
-                      // value={treeSelectValue}
-                      dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
-                      placeholder="Please select the shelves associated with this zone"
-                      allowClear
-                      multiple
-                      // onChange={handleChange(treeSelectValue)}
-                    />
+                  <Form.Item shouldUpdate>
+                    {(formInstance) => (
+                      <Form.Item
+                        {...restField}
+                        label='Shelves'
+                        name={[name, 'shelves']}
+                        rules={[
+                          { 
+                            required: true, 
+                            message: 'Missing shelves',
+                          }, 
+                          {
+                            validator: async (_, value) => {
+                              if (value?.length > 10) {
+                                return Promise.reject(new Error('Cant add more than 10 shelves per zone'));
+                              }
+                            },
+                          }
+                        ]}
+                      >
+                        <TreeSelect
+                          showSearch={false}
+                          style={{ width: '100%', paddingRight:'31px' }}
+                          dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
+                          placeholder="Please select the shelves associated with this zone"
+                          allowClear
+                          multiple
+                        >
+                          {shelvesArray.map((parentShelf) => {
+                            const formValues = formInstance.getFieldValue('zones')
+
+                            return (
+                              <TreeNode value={parentShelf.value} title={parentShelf.label} disabled={isSelected(formValues, parentShelf)}>
+                                {parentShelf.children.map((childShelf) => (
+                                    <TreeNode value={childShelf.value} title={childShelf.label} disabled={isSelected(formValues, childShelf)}/>
+                                  )
+                                )}
+                              </TreeNode>
+                            )
+                          })}
+                        </TreeSelect>
+                      </Form.Item>
+                    )}
                   </Form.Item>
                 </Space>
               ))}

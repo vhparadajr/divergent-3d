@@ -8,8 +8,10 @@ const { Option } = Select;
 const { Paragraph } = Typography
 
 const App = () => {
-  const [value, setValue] = useState(undefined)
+  const [treeSelectValue, setTreeSelectValue] = useState(undefined)
+  
   const onFinish = (values) => {
+    //TODO: add validation before making the axios call
     console.log(values)
     axios.post('https://divergent3d.getsandbox.com:443/warehouse', values)
     .then((response) => {
@@ -32,7 +34,7 @@ const App = () => {
       key:`0-${i}`,
       children: [...Array(10)].map((_,index) => (
         {
-          label: `Shelf ${i}-${index}`,
+          label: `Shelf ${i+1}-${index}`,
           value: `${i+1}-${index+1}`,
           key: `${i+1}-${index+1}`
         }
@@ -40,7 +42,7 @@ const App = () => {
     };
   } 
 
-  let zonesArray = [...Array(9)].map((_,index) => (
+  let zonesArray = [...Array(12)].map((_,index) => (
     {
       zone: index+1,
       key: index+1
@@ -74,7 +76,7 @@ const App = () => {
           <Input/>
         </Form.Item>
         <Paragraph italic>
-          A warehouse can only have 12 zones with a maximum of 10 shelves per zone
+          A warehouse can as 12 zones with a maximum of 10 shelves per zone
         </Paragraph>
         <Form.List
           name="zones"
@@ -119,12 +121,12 @@ const App = () => {
                       treeData={shelvesArray}
                       showSearch
                       style={{ width: '100%', paddingRight:'31px' }}
-                      value={value}
+                      value={treeSelectValue}
                       dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
                       placeholder="Please select"
                       allowClear
                       multiple
-                      onChange={setValue(value)}
+                      onChange={setTreeSelectValue(treeSelectValue)}
                     />
                   </Form.Item>
                 </Space>

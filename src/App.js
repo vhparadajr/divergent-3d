@@ -1,11 +1,11 @@
 import React from 'react';
-import { Form, Button, Select } from 'antd';
+import { Form, Button, Select, Input } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import './App.css';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 
 const { Option } = Select;
-
 
 const App = () => {
   const onFinish = (values) => {
@@ -37,20 +37,51 @@ const App = () => {
   } 
 
   return (
-    <div className='form-body'>
+    <div className='form-wrapper'>
       <Form
-        name="basic"
+        name='warehouse_form'
         labelCol={{ span: 8, }}
-        wrapperCol={{ span: 16, }}
         initialValues={{ remember: true, }}
         onFinish={onFinish}
         onFinishFailed={onFinishFailed}
-        autoComplete="off"
-        style={{width: '500px'}}
+        autoComplete='off'
+        layout='vertical'
       >
         <Form.Item
-          label="Zone"
-          name="zone"
+          label='New Warehouse Name'
+          name='warehouse_name'
+          rules={[
+            {
+              required: true,
+              message: 'Please input warehouse name!',
+            },
+          ]}
+        >
+          <Input/>
+        </Form.Item>
+        <Form.Item
+          label='Inventory'
+          name='inventory'
+          rules={[
+            {
+              required: true,
+              message: 'Please select a inventory item!',
+            },
+          ]}
+        >
+          <Select 
+            placeholder="Choose inventory to assign a location"
+            allowClear
+          >
+            <Option value='fork_arm'>Fork Arm</Option>
+            <Option value='actuator_valve'>Actuator Valve</Option>
+            <Option value='solenoid'>Solenoid</Option>
+            <Option value='conversion_kit'>Converstion Kit</Option>
+          </Select>
+        </Form.Item>
+        <Form.Item
+          label='Zone'
+          name='zone'
           rules={[
             {
               required: true,
@@ -71,8 +102,8 @@ const App = () => {
         </Form.Item>
 
         <Form.Item
-          label="Shelf"
-          name="shelf"
+          label='Shelf'
+          name='shelf'
           rules={[
             {
               required: true,
@@ -91,14 +122,18 @@ const App = () => {
             ))}
           </Select>
         </Form.Item>
-
-        <Form.Item
-          wrapperCol={{
-            offset: 8,
-            span: 16,
-          }}
-        >
-          <Button type="primary" htmlType="submit">
+        {/* TODO placeholder for add form.list */}
+        <Form.Item>
+          <Button
+            type="dashed"
+            style={{ width: '100%' }}
+            icon={<PlusOutlined />}
+          >
+            Add Inventory
+          </Button>
+        </Form.Item>
+        <Form.Item>
+          <Button type='primary' htmlType='submit' style={{ width: '100%' }}>
             Submit
           </Button>
         </Form.Item>

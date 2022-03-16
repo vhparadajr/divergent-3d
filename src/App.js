@@ -9,9 +9,13 @@ const { Paragraph } = Typography
 
 const App = () => {
   const [treeSelectValue, setTreeSelectValue] = useState(undefined)
-  
+  console.log('treeSelectValues', treeSelectValue)
+
+  const handleChange = (values) => {
+    return console.log(values)
+  }
+
   const onFinish = (values) => {
-    //TODO: add validation before making the axios call
     console.log(values)
     axios.post('https://divergent3d.getsandbox.com:443/warehouse', values)
     .then((response) => {
@@ -85,53 +89,59 @@ const App = () => {
             <>
               {fields.map((key, name, ...restField) => (
                 <Space key={key} direction='vertical' style={{ width:'100%'}}>
-                  <div className='zone-remove-wrapper'>
-                    {/* <Form.Item shouldUpdate>
-                    {(formInstance) => ( */}
-                      <Form.Item
-                        {...restField}
-                        label='Zone'
-                        name={[name, 'zone']}
-                        rules={[{ required: true, message: 'Missing Zone' }]}
-                        className='zone-styling'
-                      >
-                        <Select>
-                          {zonesArray.map((zone) => (
-                            <Option 
-                              value={zone.zone} 
-                              key={zone.key}
-                              // disabled={formInstance.getFieldValue('zones').includes(zone.zone)}
-                            >
-                              {zone.zone}
-                            </Option>
-                            ))}
-                        </Select> 
-                      </Form.Item>
-                    {/* )}
-                    </Form.Item> */}
-                    <MinusCircleOutlined onClick={() => remove(name)} />
-                  </div>
+                    <Form.Item shouldUpdate>
+                      {(formInstance) => (
+                        <div className='zone-remove-wrapper'>
+                          <Form.Item
+                            {...restField}
+                            label='Zone'
+                            name={[name, 'zone']}
+                            rules={[{ required: true, message: 'Missing Zone' }]}
+                            className='zone-styling'
+                          >
+                            <Select>
+                              {zonesArray.map((zone) => {
+                                const hasBeenSelected = !!formInstance.getFieldValue('zones')
+                                  .find((selectedZone) => selectedZone?.zone === zone.zone)
+                                
+                                return (
+                                  <Option 
+                                    value={zone.zone} 
+                                    key={zone.key}
+                                    disabled={hasBeenSelected}
+                                  >
+                                    {zone.zone}
+                                  </Option>
+                                )}
+                              )}
+                            </Select> 
+                          </Form.Item>
+                          <MinusCircleOutlined onClick={() => remove(name)} />
+                        </div>
+                      )}
+                    </Form.Item>
                   <Form.Item
                     {...restField}
                     label='Shelves'
                     name={[name, 'shelves']}
-                    rules={[{ required: true, message: 'Missing number of Shevles'}]}
+                    rules={[{ required: true, message: 'Missing shelves'}]}
                   >
                     <TreeSelect
                       treeData={shelvesArray}
-                      showSearch
+                      showSearch={false}
                       style={{ width: '100%', paddingRight:'31px' }}
-                      value={treeSelectValue}
+                      // value={treeSelectValue}
                       dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
-                      placeholder="Please select"
+                      placeholder="Please select the shelves associated with this zone"
                       allowClear
                       multiple
-                      onChange={setTreeSelectValue(treeSelectValue)}
+                      // onChange={handleChange(treeSelectValue)}
                     />
                   </Form.Item>
                 </Space>
               ))}
               <Form.Item style={{paddingTop: '30px'}}>
+                {/* TODO disable button if all 12 zones have been selected */}
                 <Button
                   type="dashed"
                   onClick={() => add()}
@@ -146,7 +156,11 @@ const App = () => {
           )}
         </Form.List>
         <Form.Item>
-          <Button type='primary' htmlType='submit' style={{ width: '100%' }}>
+          <Button 
+            type='primary' 
+            htmlType='submit' 
+            style={{ width: '100%' }}
+          >
             Submit
           </Button>
         </Form.Item>
